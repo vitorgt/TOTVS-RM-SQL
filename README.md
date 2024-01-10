@@ -1,5 +1,7 @@
 # Geração de Consultas SQL a partir de Tabelas e Relacionamentos do TOTVS RM
 
+## [Versão online](https://vitorgt.github.io/TOTVS-RM-SQL)
+
 ## Introdução
 
 Bem-vindo ao projeto de geração de consultas SQL a partir de tabelas e relacionamentos do sistema TOTVS RM! Este script em Python foi desenvolvido para simplificar a criação de consultas complexas, oferecendo uma abordagem intuitiva e visual para compreender as intricadas relações entre as tabelas do TOTVS RM.
