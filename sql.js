@@ -1,13 +1,15 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const listaTabelas = document.getElementById("table-list")
-  const searchBox = document.getElementById("search-box")
-  const checkboxDescSelect = document.getElementById("toggle-desc-select")
-  const checkboxDescJoin = document.getElementById("toggle-desc-join")
+  const btnBackTop = document.getElementById("back-to-top")
   const btnClearSelection = document.getElementById("clear-selection")
   const btnCopySQL = document.getElementById("copy-sql")
   const btnDownloadSQL = document.getElementById("download-sql")
   const checkboxColExtras = document.getElementById("toggle-extra-columns")
+  const checkboxDescJoin = document.getElementById("toggle-desc-join")
+  const checkboxDescSelect = document.getElementById("toggle-desc-select")
   const joinTypeForm = document.getElementById("join-type-form")
+  const listaTabelas = document.getElementById("table-list")
+  const notification = document.getElementById("notification")
+  const searchBox = document.getElementById("search-box")
 
   let selecoes = new Set()
   let tabelas = {}
@@ -19,7 +21,19 @@ document.addEventListener("DOMContentLoaded", function () {
   let tipoJoinAtual = "LEFT "
 
   btnCopySQL.addEventListener("click", function () {
-    navigator.clipboard.writeText(clausulaSQL)
+    navigator.clipboard
+      .writeText(clausulaSQL)
+      .then(() => {
+        // Mostrar notificação
+        notification.style.display = "block"
+        // Ocultar notificação após 3 segundos
+        setTimeout(function () {
+          notification.style.display = "none"
+        }, 3000)
+      })
+      .catch((err) => {
+        console.error("Erro ao copiar SQL:", err)
+      })
   })
 
   btnDownloadSQL.addEventListener("click", function () {
@@ -67,6 +81,24 @@ document.addEventListener("DOMContentLoaded", function () {
     tipoJoinAtual = event.target.value
     atualizarConsultaSQL()
   })
+
+  // Quando o usuário rolar para baixo 20px do topo do documento, mostre o botão
+  window.onscroll = function () {
+    if (
+      document.body.scrollTop > 200 ||
+      document.documentElement.scrollTop > 200
+    ) {
+      btnBackTop.style.display = "block"
+    } else {
+      btnBackTop.style.display = "none"
+    }
+  }
+
+  // Quando o usuário clicar no botão, rolar para o topo do documento
+  btnBackTop.onclick = function () {
+    document.body.scrollTop = 0 // Para Safari
+    document.documentElement.scrollTop = 0 // Para Chrome, Firefox, IE e Opera
+  }
 
   function updateTableList(filter = "") {
     listaTabelas.innerHTML = "" // Limpa a lista atual

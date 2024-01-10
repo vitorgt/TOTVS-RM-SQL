@@ -1,6 +1,11 @@
 body {
   font-family: Arial, sans-serif;
 }
+
+h1,
+h2 {
+  text-align: center;
+}
 #container {
   display: flex;
   flex-direction: column;
@@ -24,18 +29,28 @@ body {
 #search-box {
   width: 95%;
   padding: 10px;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
   font-size: 16px;
 }
 .table-list {
   list-style: none;
   padding: 0;
   width: 100%;
-  height: 300px;
+  height: 342px;
   overflow-y: scroll;
 }
 .table-list li {
   margin-bottom: 10px;
+}
+
+/* Mídia query para telas maiores (tablets e desktops) */
+@media (min-width: 768px) {
+  #container {
+    flex-direction: row;
+  }
+  #container > div {
+    flex: 1;
+  }
 }
 
 /* Sobrescrevendo os estilos padrões do Prism.js */
@@ -59,12 +74,70 @@ body {
   font-weight: bold;
 }
 
-/* Mídia query para telas maiores (tablets e desktops) */
-@media (min-width: 768px) {
-  #container {
-    flex-direction: row;
+#back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #a8a8a8; /* Cor de fundo */
+  color: white; /* Cor do texto */
+  border: none;
+  border-radius: 5px;
+  padding: 7px 10px 10px 10px;
+  cursor: pointer;
+  display: none; /* Inicialmente escondido */
+  font-size: 20px;
+  transform: rotate(-90deg); /* Gira a seta 90 graus no sentido anti-horário */
+}
+
+#back-to-top:hover {
+  background-color: #4e4e4e; /* Cor de fundo ao passar o mouse */
+}
+
+.notification {
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px;
+  background-color: green;
+  color: white;
+  border-radius: 5px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+  z-index: 1000; /* Certifique-se de que está acima de outros elementos */
+}
+
+.h-stack {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center; /* Centraliza verticalmente os itens */
+  gap: 20px; /* Espaçamento entre os elementos da h-stack */
+  /* margin-bottom: 20px; */
+}
+
+.v-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Espaçamento entre os elementos da v-stack */
+}
+
+/* Mídia query para telas menores */
+@media (max-width: 768px) {
+  .h-stack {
+    flex-direction: column;
   }
-  #container > div {
-    flex: 1;
-  }
+}
+#source-code-link {
+  position: absolute; /* Fixa o elemento em uma posição na tela */
+  top: 20px; /* 20px do topo da página */
+  right: 20px; /* 20px da esquerda da página */
+  padding: 5px 7px;
+  background-color: #a8a8a8; /* Cor de fundo azul */
+  color: white; /* Cor do texto branco */
+  text-decoration: none; /* Remove o sublinhado do link */
+  border-radius: 5px; /* Bordas arredondadas */
+}
+
+#source-code-link:hover {
+  background-color: #4e4e4e; /* Cor de fundo ao passar o mouse */
 }

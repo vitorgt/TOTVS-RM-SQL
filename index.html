@@ -12,15 +12,15 @@
     <script src="sql.js"></script>
   </head>
   <body>
-    <h1>Gerador de Consulta SQL - TOTVS RM</h1>
+    <h1>Gerador de Consulta SQL - TOTVS RM (12.1.2306)</h1>
 
     <div id="container">
       <div>
-        <h2>Selecione as Tabelas</h2>
+        <div class="h-stack">
+          <h2>Selecione as Tabelas</h2>
+          <button id="clear-selection">Limpar Seleção</button>
+        </div>
         <input type="text" id="search-box" placeholder="Buscar tabela..." />
-
-        <button id="clear-selection">Limpar Seleção</button>
-
         <ul id="table-list" class="table-list">
           <!-- As tabelas serão listadas aqui -->
         </ul>
@@ -34,42 +34,64 @@
 
     <div>
       <h2>Consulta SQL Gerada</h2>
-      <button id="copy-sql">Copiar SQL</button>
-      <button id="download-sql">Baixar SQL</button>
-      <br />
-      <label>
-        <input type="checkbox" id="toggle-desc-select" checked />
-        Mostrar descrições no SELECT
-      </label>
-      <label>
-        <input type="checkbox" id="toggle-desc-join" checked />
-        Mostrar descrições no JOIN
-      </label>
-      <label>
-        <input type="checkbox" id="toggle-extra-columns" />
-        Incluir Colunas Criação e Modificação
-      </label>
-      <br />
-      <form id="join-type-form">
-        <label>
-          <input type="radio" name="join-type" value="" /> Inner Join
-        </label>
-        <label>
-          <input type="radio" name="join-type" value="LEFT " checked />
-          Left Join
-        </label>
-        <label>
-          <input type="radio" name="join-type" value="RIGHT " /> Right Join
-        </label>
-        <label>
-          <input type="radio" name="join-type" value="FULL OUTER " />
-          Full Outer Join
-        </label>
-      </form>
 
-      <!-- <textarea id="sql-output" readonly></textarea> -->
+      <div class="h-stack">
+        <div class="v-stack">
+          <button id="copy-sql">Copiar SQL</button>
+          <button id="download-sql">Baixar SQL</button>
+        </div>
+
+        <div class="v-stack">
+          <label>
+            <input type="checkbox" id="toggle-desc-select" checked />
+            Mostrar descrições no SELECT
+          </label>
+          <label>
+            <input type="checkbox" id="toggle-desc-join" checked />
+            Mostrar descrições no JOIN
+          </label>
+          <label>
+            <input type="checkbox" id="toggle-extra-columns" />
+            Incluir Colunas Criação e Modificação
+          </label>
+        </div>
+
+        <form id="join-type-form">
+          <div class="v-stack">
+            <label>
+              <input type="radio" name="join-type" value="" /> Inner Join
+            </label>
+            <label>
+              <input type="radio" name="join-type" value="LEFT " checked />
+              Left Join
+            </label>
+            <label>
+              <input type="radio" name="join-type" value="RIGHT " /> Right Join
+            </label>
+            <label>
+              <input type="radio" name="join-type" value="FULL OUTER " />
+              Full Outer Join
+            </label>
+          </div>
+        </form>
+      </div>
+
       <pre><code id="sql-output" class="language-sql"></code></pre>
     </div>
+
+    <button id="back-to-top" title="Voltar para cima">&#10140;</button>
+
+    <div id="notification" class="notification">
+      Consulta SQL copiada com sucesso!
+    </div>
+
+    <a
+      href="https://github.com/vitorgt/TOTVS-RM-SQL"
+      id="source-code-link"
+      target="_blank"
+      title="Código fonte"
+      >&#10094;&#10095;</a
+    >
 
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-core.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-sql.min.js"></script>
