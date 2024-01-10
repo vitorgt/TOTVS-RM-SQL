@@ -2,61 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gerador de Consulta SQL - TOTVS RM</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-      }
-      #container {
-        display: flex;
-        flex-direction: column;
-      }
-      #graph-container,
-      #mynetwork {
-        width: 100%;
-        height: 400px;
-        border: 1px solid #ddd;
-        margin-bottom: 20px;
-      }
-      #sql-output {
-        width: 100%;
-        height: 600px;
-        background-color: #f9f9f9;
-        border: 1px solid #ddd;
-        overflow-y: scroll;
-        white-space: pre-wrap;
-        padding: 10px;
-      }
-      #search-box {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 20px;
-        font-size: 16px;
-      }
-      .table-list {
-        list-style: none;
-        padding: 0;
-        width: 100%;
-        height: 300px;
-        overflow-y: scroll;
-      }
-      .table-list li {
-        margin-bottom: 10px;
-      }
-      /* Mídia query para telas maiores (tablets e desktops) */
-      @media (min-width: 768px) {
-        #container {
-          flex-direction: row;
-        }
-        #container > div {
-          flex: 1;
-        }
-      }
-    </style>
+    <link
+      href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css"
+      rel="stylesheet" />
+    <script src="sql.js"></script>
   </head>
   <body>
     <h1>Gerador de Consulta SQL - TOTVS RM</h1>
@@ -64,10 +17,7 @@
     <div id="container">
       <div>
         <h2>Selecione as Tabelas</h2>
-        <input
-          type="text"
-          id="search-box"
-          placeholder="Buscar tabela..." />
+        <input type="text" id="search-box" placeholder="Buscar tabela..." />
 
         <button id="clear-selection">Limpar Seleção</button>
 
@@ -85,6 +35,8 @@
     <div>
       <h2>Consulta SQL Gerada</h2>
       <button id="copy-sql">Copiar SQL</button>
+      <button id="download-sql">Baixar SQL</button>
+      <br />
       <label>
         <input type="checkbox" id="toggle-desc-select" checked />
         Mostrar descrições no SELECT
@@ -93,240 +45,33 @@
         <input type="checkbox" id="toggle-desc-join" checked />
         Mostrar descrições no JOIN
       </label>
-      <textarea id="sql-output" readonly></textarea>
+      <label>
+        <input type="checkbox" id="toggle-extra-columns" />
+        Incluir Colunas Criação e Modificação
+      </label>
+      <br />
+      <form id="join-type-form">
+        <label>
+          <input type="radio" name="join-type" value="" /> Inner Join
+        </label>
+        <label>
+          <input type="radio" name="join-type" value="LEFT " checked />
+          Left Join
+        </label>
+        <label>
+          <input type="radio" name="join-type" value="RIGHT " /> Right Join
+        </label>
+        <label>
+          <input type="radio" name="join-type" value="FULL OUTER " />
+          Full Outer Join
+        </label>
+      </form>
+
+      <!-- <textarea id="sql-output" readonly></textarea> -->
+      <pre><code id="sql-output" class="language-sql"></code></pre>
     </div>
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const listaTabelas = document.getElementById("table-list")
-        const searchBox = document.getElementById("search-box")
-        const checkboxDescSelect = document.getElementById(
-          "toggle-desc-select",
-        )
-        const checkboxDescJoin =
-          document.getElementById("toggle-desc-join")
-        const btnClearSelection =
-          document.getElementById("clear-selection")
-        let selecoes = new Set()
-        let tabelas = {}
-        let relacoes = []
-        let nodes = []
-        let edges = []
 
-        btnClearSelection.addEventListener("click", () => {
-          // Desmarca todas as caixas de seleção
-          const checkboxes = document.querySelectorAll(
-            '#table-list input[type="checkbox"]',
-          )
-          checkboxes.forEach((checkbox) => (checkbox.checked = false))
-          // Limpa o conjunto de seleções
-          selecoes.clear()
-          criarGrafo()
-        })
-
-        checkboxDescSelect.addEventListener(
-          "change",
-          atualizarConsultaSQL,
-        )
-        checkboxDescJoin.addEventListener(
-          "change",
-          atualizarConsultaSQL,
-        )
-
-        function updateTableList(filter = "") {
-          listaTabelas.innerHTML = "" // Limpa a lista atual
-
-          // Filtra e lista as tabelas
-          Object.keys(tabelas)
-            .filter((tabela) =>
-              (tabela + " " + tabelas[tabela]["#"])
-                .toLowerCase()
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "")
-                .includes(filter.toLowerCase()),
-            )
-            .forEach((tabela) => {
-              const listItem = document.createElement("li")
-              const checkbox = document.createElement("input")
-              checkbox.type = "checkbox"
-              checkbox.id = tabela
-              checkbox.value = tabela
-
-              // Verifica se a tabela está selecionada
-              if (selecoes.has(tabela)) {
-                checkbox.checked = true
-              }
-
-              checkbox.addEventListener("change", () => {
-                // Atualiza o estado da seleção
-                if (checkbox.checked) {
-                  selecoes.add(tabela)
-                } else {
-                  selecoes.delete(tabela)
-                }
-                criarGrafo()
-                atualizarConsultaSQL()
-              })
-
-              const label = document.createElement("label")
-              label.htmlFor = tabela
-              label.textContent = tabela
-              if (tabelas[tabela]["#"]) {
-                label.textContent = tabela + ": " + tabelas[tabela]["#"]
-              }
-
-              listItem.appendChild(checkbox)
-              listItem.appendChild(label)
-              listaTabelas.appendChild(listItem)
-            })
-        }
-
-        fetch(
-          "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/tabelas.json",
-        )
-          .then((response) => response.json())
-          .then((data) => {
-            tabelas = data
-            updateTableList()
-            searchBox.addEventListener("input", () => {
-              updateTableList(searchBox.value)
-            })
-            Object.keys(tabelas).forEach((tabela) => {
-              nodes.push({
-                id: tabela,
-                label: tabela,
-                group:
-                  tabela.substring(0, 2) == "SZ"
-                    ? "SZ"
-                    : tabela.substring(0, 1),
-              })
-            })
-          })
-          .catch((error) =>
-            console.error(
-              "Erro ao carregar os dados das tabelas:",
-              error,
-            ),
-          )
-        fetch(
-          "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/relacoes.json",
-        )
-          .then((response) => response.json())
-          .then((data) => {
-            relacoes = data
-            relacoes.forEach((relacao) => {
-              edges.push({
-                from: relacao[0],
-                source: relacao[0],
-                to: relacao[1],
-                target: relacao[1],
-              })
-            })
-          })
-          .catch((error) =>
-            console.error(
-              "Erro ao carregar os dados das relacoes:",
-              error,
-            ),
-          )
-
-        function criarGrafo() {
-          const nosFiltrados = nodes.filter((node) =>
-            selecoes.has(node.id),
-          )
-          const idsNosFiltrados = new Set(
-            nosFiltrados.map((node) => node.id),
-          )
-          const arestasFiltradas = edges.filter(
-            (edge) =>
-              idsNosFiltrados.has(edge.from) &&
-              idsNosFiltrados.has(edge.to),
-          )
-
-          // Criação do grafo
-          const container = document.getElementById("mynetwork")
-          const dados = {
-            nodes: new vis.DataSet(nosFiltrados),
-            edges: new vis.DataSet(arestasFiltradas),
-          }
-          const opcoes = {} // Personalize as opções do grafo conforme necessário
-          const network = new vis.Network(container, dados, opcoes)
-        }
-
-        function compoeSelect(tabelasSelecionadas, descricoes = true) {
-          let selectClause = "SELECT\n"
-          tabelasSelecionadas.forEach((tabela, index) => {
-            let colunas = tabelas[tabela]
-            Object.keys(colunas || {}).forEach(
-              (coluna, colIndex, array) => {
-                selectClause += `\t${tabela}.${coluna} AS ${tabela}_${coluna}`
-                if (
-                  index !== tabelasSelecionadas.length - 1 ||
-                  colIndex !== array.length - 1
-                ) {
-                  selectClause += ","
-                }
-                selectClause += descricoes
-                  ? ` /* ${colunas[coluna]} */\n`
-                  : "\n"
-              },
-            )
-          })
-          if (selectClause == "SELECT\n") return ""
-          return selectClause
-        }
-
-        function compoeJoin(
-          tabelasSelecionadas,
-          tipo = "LEFT",
-          descricoes = true,
-        ) {
-          let joinClause = `FROM ${tabelasSelecionadas[0]} (NOLOCK)\n`
-
-          tabelasSelecionadas.slice(1).forEach((tabela) => {
-            joinClause += `\t${tipo} JOIN ${tabela} (NOLOCK)\n`
-            relacoes.forEach((rel) => {
-              if (rel.includes(tabela)) {
-                rel[2].forEach((ligacao, index) => {
-                  let chavesOrigem = ligacao[0].split(",")
-                  let chavesDestino = ligacao[1].split(",")
-
-                  chavesOrigem.forEach((chaveOrigem, idx) => {
-                    joinClause += `\t\t${idx === 0 ? " ON" : "AND"} `
-                    joinClause += `${rel[0]}.${chaveOrigem} = ${rel[1]}.${chavesDestino[idx]}`
-                    joinClause += descricoes
-                      ? ` /* ${tabelas[rel[0]][chaveOrigem]} - ${
-                          tabelas[rel[1]][chavesDestino[idx]]
-                          // erro aqui `tabelas[rel[1]]`
-                        } */\n`
-                      : "\n"
-                  })
-                })
-              }
-            })
-          })
-
-          if (joinClause == "FROM undefined (NOLOCK)\n") return ""
-          return joinClause
-        }
-
-        // Função para atualizar a consulta SQL
-        function atualizarConsultaSQL() {
-          let tabelasSelecionadas = Array.from(selecoes)
-          let descricoesSelect = checkboxDescSelect.checked
-          let descricoesJoin = checkboxDescJoin.checked
-          let clausulaSelect = compoeSelect(
-            tabelasSelecionadas,
-            descricoesSelect,
-          )
-          let clausulaJoin = compoeJoin(
-            tabelasSelecionadas,
-            "LEFT",
-            descricoesJoin,
-          )
-          document.getElementById("sql-output").value =
-            clausulaSelect + clausulaJoin
-        }
-      })
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-sql.min.js"></script>
   </body>
 </html>
