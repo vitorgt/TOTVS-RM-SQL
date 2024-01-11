@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", function () {
       nodes: new vis.DataSet(nosFiltrados),
       edges: new vis.DataSet(arestasFiltradas),
     }
-    const network = new vis.Network(container, dados)
+    const network = new vis.Network(container, dados, {})
   }
 
   function compoeSelect(tabelasSelecionadas, descricoes = true) {
