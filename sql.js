@@ -82,7 +82,6 @@ document.addEventListener("DOMContentLoaded", function () {
     atualizarConsultaSQL()
   })
 
-  // Quando o usuário rolar para baixo 20px do topo do documento, mostre o botão
   window.onscroll = function () {
     if (
       document.body.scrollTop > 200 ||
@@ -94,11 +93,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Quando o usuário clicar no botão, rolar para o topo do documento
   btnBackTop.onclick = function () {
     document.body.scrollTop = 0 // Para Safari
     document.documentElement.scrollTop = 0 // Para Chrome, Firefox, IE e Opera
   }
+
+  document
+    .getElementById("theme-toggle")
+    .addEventListener("click", function () {
+      const currentTheme = document.documentElement.getAttribute("data-theme")
+      const newTheme = currentTheme === "light" ? "dark" : "light"
+      document.documentElement.setAttribute("data-theme", newTheme)
+      this.textContent = newTheme === "light" ? "🌙" : "☀️"
+    })
+
+  // Defina o tema padrão como escuro na inicialização
+  document.documentElement.setAttribute("data-theme", "dark")
 
   function updateTableList(filter = "") {
     listaTabelas.innerHTML = "" // Limpa a lista atual
@@ -202,8 +212,7 @@ document.addEventListener("DOMContentLoaded", function () {
       nodes: new vis.DataSet(nosFiltrados),
       edges: new vis.DataSet(arestasFiltradas),
     }
-    const opcoes = {} // Personalize as opções do grafo conforme necessário
-    const network = new vis.Network(container, dados, opcoes)
+    const network = new vis.Network(container, dados)
   }
 
   function compoeSelect(tabelasSelecionadas, descricoes = true) {
@@ -317,7 +326,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function compoeJoin(tabelasSelecionadas, tipo = "LEFT", descricoes = true) {
-    let joinClause = `FROM   ${tabelasSelecionadas[0]} (NOLOCK)`
+    let joinClause = `/* IMPORTANTE: Por favor, revise os JOINs abaixo com atenção.
+ * Esta consulta inclui todas as combinações possíveis de JOINs entre as tabelas selecionadas.
+ * No entanto, algumas dessas combinações podem não ser adequadas para o que você precisa.
+ * Certifique-se de ajustar ou remover os JOINs que não se encaixam no seu contexto específico.
+ */`
+    joinClause += `\nFROM   ${tabelasSelecionadas[0]} (NOLOCK)`
     joinClause += descricoes
       ? ` /* ${tabelas[tabelasSelecionadas[0]]["#"]} */\n`
       : "\n"
@@ -346,7 +360,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return joinClause !== "FROM undefined (NOLOCK)\n" ? joinClause : ""
   }
 
-  // Função para atualizar a consulta SQL
   function atualizarConsultaSQL() {
     let elementoSQL = document.getElementById("sql-output")
     let tabelasSelecionadas = Array.from(selecoes)

@@ -1,4 +1,42 @@
+:root {
+  /* Tema escuro (padrão) */
+  --background-color: #121212;
+  --text-color: #ffffff;
+  --button-background: #333333;
+  --button-background-hover: #6e6e6e;
+  --button-text: #ffffff;
+  /* --sql-keyword: #eec937; */
+  /* --sql-keyword: #ffd60a; */
+  --sql-keyword: #6ce0db;
+  /* --sql-comment: #909090; */
+  --sql-comment: #8e8e93;
+  /* --sql-column: #64599e; */
+  --sql-column: #5e5ce6;
+  --green: #30d158;
+  --red: #ff453a;
+}
+
+[data-theme="light"] {
+  /* Tema claro */
+  --background-color: #ffffff;
+  --text-color: #000000;
+  --button-background: #bebebe;
+  --button-background-hover: #777777;
+  --button-text: #000000;
+  /* --sql-keyword: #d0b344; */
+  /* --sql-keyword: #da9732; */
+  --sql-keyword: #02bdb4;
+  /* --sql-comment: #909090; */
+  --sql-comment: #8e8e93;
+  /* --sql-column: #64599e; */
+  --sql-column: #5856d6;
+  --green: #34c759;
+  --red: #ff3b30;
+}
+
 body {
+  background-color: var(--background-color);
+  color: var(--text-color);
   font-family: Arial, sans-serif;
 }
 
@@ -6,9 +44,15 @@ h1,
 h2 {
   text-align: center;
 }
+
+#title {
+  padding: 0 50px;
+}
+
 #container {
   display: flex;
   flex-direction: column;
+  padding: 0 10px;
 }
 #graph-container,
 #mynetwork {
@@ -31,7 +75,18 @@ h2 {
   padding: 10px;
   /* margin-bottom: 20px; */
   font-size: 16px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border-radius: 5px;
+  border: 1px solid var(--button-background);
+  /* border: 0; */
+  outline: 0;
 }
+
+#search-box > input:focus {
+  outline: none !important;
+}
+
 .table-list {
   list-style: none;
   padding: 0;
@@ -54,23 +109,40 @@ h2 {
 }
 
 /* Sobrescrevendo os estilos padrões do Prism.js */
+
+code[class*="language-sql"],
+pre[class*="language-sql"],
+code,
+pre,
+.language-sql,
+.token {
+  /* color: black; */
+  background: none;
+  background-color: none;
+  text-shadow: none;
+  color: var(--text-color);
+}
 /* Palavras reservadas */
 .language-sql .token.keyword,
 .language-sql .token.operator {
-  color: #d0b344;
+  color: var(--sql-keyword);
   font-weight: bold;
+  background: none;
+  background-color: none;
+  text-shadow: none;
 }
 
 /* Comentários */
-.language-sql .token.comment {
-  color: #909090;
+.language-sql .token.comment,
+.language-sql .token.punctuation {
+  color: var(--sql-comment);
   font-style: italic;
 }
 /* Tabelas e Colunas (não há uma classe específica no Prism.js para tabelas e colunas,
        então você teria que criar uma lógica adicional para isso) */
-.language-sql .token.table,
-.language-sql .token.column {
-  color: #64599e;
+.language-sql .token.column,
+.language-sql .token.table {
+  color: var(--sql-column);
   font-weight: bold;
 }
 
@@ -78,8 +150,8 @@ h2 {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: #a8a8a8; /* Cor de fundo */
-  color: white; /* Cor do texto */
+  background-color: var(--button-background);
+  color: var(--button-text);
   border: none;
   border-radius: 5px;
   padding: 7px 10px 10px 10px;
@@ -89,8 +161,22 @@ h2 {
   transform: rotate(-90deg); /* Gira a seta 90 graus no sentido anti-horário */
 }
 
-#back-to-top:hover {
-  background-color: #4e4e4e; /* Cor de fundo ao passar o mouse */
+#back-to-top:hover,
+#theme-toggle:hover {
+  background-color: var(--button-background-hover);
+}
+
+#theme-toggle {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: var(--button-background);
+  color: var(--button-text);
+  border: none;
+  border-radius: 5px;
+  padding: 5px;
+  cursor: pointer;
+  /* font-size: 20px; */
 }
 
 .notification {
@@ -99,11 +185,11 @@ h2 {
   top: 20px;
   right: 20px;
   padding: 10px;
-  background-color: green;
-  color: white;
+  background-color: var(--green);
+  color: var(--text-color);
   border-radius: 5px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-  z-index: 1000; /* Certifique-se de que está acima de outros elementos */
+  /* box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5); */
+  z-index: 1000;
 }
 
 .h-stack {
@@ -128,16 +214,16 @@ h2 {
   }
 }
 #source-code-link {
-  position: absolute; /* Fixa o elemento em uma posição na tela */
-  top: 20px; /* 20px do topo da página */
-  right: 20px; /* 20px da esquerda da página */
+  position: absolute;
+  top: 20px;
+  right: 20px;
   padding: 5px 7px;
-  background-color: #a8a8a8; /* Cor de fundo azul */
-  color: white; /* Cor do texto branco */
-  text-decoration: none; /* Remove o sublinhado do link */
-  border-radius: 5px; /* Bordas arredondadas */
+  background-color: var(--button-background);
+  color: var(--button-text);
+  text-decoration: none;
+  border-radius: 5px;
 }
 
 #source-code-link:hover {
-  background-color: #4e4e4e; /* Cor de fundo ao passar o mouse */
+  background-color: var(--button-background-hover);
 }

@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gerador de Consulta SQL - TOTVS RM</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <link rel="stylesheet" type="text/css" href="style.css" />
     <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link
       href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css"
       rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
     <script src="sql.js"></script>
   </head>
   <body>
-    <h1>Gerador de Consulta SQL - TOTVS RM (12.1.2306)</h1>
+    <div id="title">
+      <h1>Gerador de Consulta SQL - TOTVS RM (12.1.2306)</h1>
+    </div>
 
     <div id="container">
       <div>
@@ -28,7 +30,7 @@
       </div>
 
       <div id="graph-container">
-        <h2>Visualização do Grafo de Tabelas</h2>
+        <h2>Visualização do Grafo de Relações de Tabelas</h2>
         <div id="mynetwork"></div>
       </div>
     </div>
@@ -85,6 +87,8 @@
     <div id="notification" class="notification">
       Consulta SQL copiada com sucesso!
     </div>
+
+    <button id="theme-toggle">☀️</button>
 
     <a
       href="https://github.com/vitorgt/TOTVS-RM-SQL"
