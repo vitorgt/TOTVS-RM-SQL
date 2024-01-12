@@ -1,385 +1,76 @@
-document.addEventListener("DOMContentLoaded", function () {
-  const btnBackTop = document.getElementById("back-to-top")
-  const btnClearSelection = document.getElementById("clear-selection")
-  const btnCopySQL = document.getElementById("copy-sql")
-  const btnDownloadSQL = document.getElementById("download-sql")
-  const checkboxColExtras = document.getElementById("toggle-extra-columns")
-  const checkboxDescJoin = document.getElementById("toggle-desc-join")
-  const checkboxDescSelect = document.getElementById("toggle-desc-select")
-  const joinTypeForm = document.getElementById("join-type-form")
-  const listaTabelas = document.getElementById("table-list")
-  const notification = document.getElementById("notification")
-  const searchBox = document.getElementById("search-box")
+let selecoes = new Set()
+let tabelas = {}
+let relacoes = []
+let nodes = []
+let edges = []
+let clausulaSQL = ""
 
-  let selecoes = new Set()
-  let tabelas = {}
-  let relacoes = []
-  let nodes = []
-  let edges = []
-  let incluirColunasExtras = false
-  let clausulaSQL = ""
-  let tipoJoinAtual = "LEFT "
-
-  btnCopySQL.addEventListener("click", function () {
-    navigator.clipboard
-      .writeText(clausulaSQL)
-      .then(() => {
-        // Mostrar notificação
-        notification.style.display = "block"
-        // Ocultar notificação após 3 segundos
-        setTimeout(function () {
-          notification.style.display = "none"
-        }, 3000)
-      })
-      .catch((err) => {
-        console.error("Erro ao copiar SQL:", err)
-      })
+fetch(
+  "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/tabelas.json",
+)
+  .then((resposta) => resposta.json())
+  .then((dados) => {
+    lerJSONTabelas(dados)
+  })
+  .catch((erro) => {
+    notificar("Não foi possível carregar os dados das tabelas.")
+    console.error("Erro ao carregar os dados das tabelas:", erro)
   })
 
-  btnDownloadSQL.addEventListener("click", function () {
-    const blob = new Blob([clausulaSQL], { type: "text/plain" })
-    const url = URL.createObjectURL(blob)
-    const d = new Date()
-    if (d.getTimezoneOffset() > 0) {
-      d.setTime(d.getTime() - d.getTimezoneOffset() * 60 * 1000)
-    }
-    const now = d
-      .toISOString()
-      .replace(/:/g, "-")
-      .replace("T", "-")
-      .replace("Z", "")
-      .substring(0, 19)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = Array.from(selecoes)[0] + "-" + now + ".sql"
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+fetch(
+  "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/relacoes.json",
+)
+  .then((resposta) => resposta.json())
+  .then((dados) => {
+    lerJSONRelacoes(dados)
+  })
+  .catch((erro) => {
+    notificar("Não foi possível carregar os dados das relações.")
+    console.error("Erro ao carregar os dados das relacoes:", erro)
   })
 
-  btnClearSelection.addEventListener("click", () => {
-    // Desmarca todas as caixas de seleção
-    const checkboxes = document.querySelectorAll(
-      '#table-list input[type="checkbox"]',
-    )
-    checkboxes.forEach((checkbox) => (checkbox.checked = false))
-    // Limpa o conjunto de seleções
-    selecoes.clear()
-    criarGrafo()
-    atualizarConsultaSQL()
-  })
+if (document.readyState == "complete") {
+  DOMpronto()
+} else {
+  document.addEventListener("DOMContentLoaded", DOMpronto)
+}
 
-  checkboxDescSelect.addEventListener("change", atualizarConsultaSQL)
-  checkboxDescJoin.addEventListener("change", atualizarConsultaSQL)
-  checkboxColExtras.addEventListener("change", (event) => {
-    incluirColunasExtras = event.target.checked
-    atualizarConsultaSQL()
-  })
+function DOMpronto() {
+  document
+    .getElementById("in-busca-tabela")
+    .addEventListener("input", atualizarListaTabelas)
+  document
+    .getElementById("btn-limpar-selecao")
+    .addEventListener("click", limparSelecao)
 
-  joinTypeForm.addEventListener("change", (event) => {
-    tipoJoinAtual = event.target.value
-    atualizarConsultaSQL()
-  })
-
-  window.onscroll = function () {
-    if (
-      document.body.scrollTop > 200 ||
-      document.documentElement.scrollTop > 200
-    ) {
-      btnBackTop.style.display = "block"
-    } else {
-      btnBackTop.style.display = "none"
-    }
-  }
-
-  btnBackTop.onclick = function () {
-    document.body.scrollTop = 0 // Para Safari
-    document.documentElement.scrollTop = 0 // Para Chrome, Firefox, IE e Opera
-  }
+  document.getElementById("btn-sql-copiar").addEventListener("click", copiarSQL)
+  document.getElementById("btn-sql-baixar").addEventListener("click", baixarSQL)
 
   document
-    .getElementById("theme-toggle")
-    .addEventListener("click", function () {
-      const currentTheme = document.documentElement.getAttribute("data-theme")
-      const newTheme = currentTheme === "light" ? "dark" : "light"
-      document.documentElement.setAttribute("data-theme", newTheme)
-      this.textContent = newTheme === "light" ? "🌙" : "☀️"
-    })
+    .getElementById("in-descricoes-select")
+    .addEventListener("change", atualizarSQL)
+  document
+    .getElementById("in-descricoes-join")
+    .addEventListener("change", atualizarSQL)
+  document
+    .getElementById("in-colunas-modificacao")
+    .addEventListener("change", atualizarSQL)
+  document
+    .getElementById("frm-tipo-join")
+    .addEventListener("change", atualizarSQL)
 
-  // Defina o tema padrão como escuro na inicialização
-  document.documentElement.setAttribute("data-theme", "dark")
+  window.onscroll = exibirOcultarBtnVoltar
+  document.getElementById("btn-voltar-topo").onclick = voltarAoTopo
 
-  function updateTableList(filter = "") {
-    listaTabelas.innerHTML = "" // Limpa a lista atual
+  configurarTema()
+  document
+    .getElementById("btn-alternar-tema")
+    .addEventListener("click", alternarTema)
 
-    // Filtra e lista as tabelas
-    Object.keys(tabelas)
-      .filter((tabela) =>
-        (tabela + " " + tabelas[tabela]["#"])
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .includes(filter.toLowerCase()),
-      )
-      .forEach((tabela) => {
-        const listItem = document.createElement("li")
-        const checkbox = document.createElement("input")
-        checkbox.type = "checkbox"
-        checkbox.id = tabela
-        checkbox.value = tabela
-
-        // Verifica se a tabela está selecionada
-        if (selecoes.has(tabela)) {
-          checkbox.checked = true
-        }
-
-        checkbox.addEventListener("change", () => {
-          // Atualiza o estado da seleção
-          if (checkbox.checked) {
-            selecoes.add(tabela)
-          } else {
-            selecoes.delete(tabela)
-          }
-          criarGrafo()
-          atualizarConsultaSQL()
-        })
-
-        const label = document.createElement("label")
-        label.htmlFor = tabela
-        label.textContent = tabela
-        if (tabelas[tabela]["#"]) {
-          label.textContent = tabela + ": " + tabelas[tabela]["#"]
-        }
-
-        listItem.appendChild(checkbox)
-        listItem.appendChild(label)
-        listaTabelas.appendChild(listItem)
-      })
-  }
-
-  fetch(
-    "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/tabelas.json",
-  )
-    .then((response) => response.json())
-    .then((data) => {
-      tabelas = data
-      updateTableList()
-      searchBox.addEventListener("input", () => {
-        updateTableList(searchBox.value)
-      })
-      Object.keys(tabelas).forEach((tabela) => {
-        nodes.push({
-          id: tabela,
-          label: tabela,
-          title: tabela,
-          group: tabela.substring(0, 2) == "SZ" ? "SZ" : tabela.substring(0, 1),
-        })
-      })
-    })
-    .catch((error) =>
-      console.error("Erro ao carregar os dados das tabelas:", error),
-    )
-  fetch(
-    "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/relacoes.json",
-  )
-    .then((response) => response.json())
-    .then((data) => {
-      relacoes = data
-      relacoes.forEach((relacao) => {
-        edges.push({
-          from: relacao[0],
-          source: relacao[0],
-          to: relacao[1],
-          target: relacao[1],
-        })
-      })
-    })
-    .catch((error) =>
-      console.error("Erro ao carregar os dados das relacoes:", error),
-    )
-
-  function criarGrafo() {
-    const nosFiltrados = nodes.filter((node) => selecoes.has(node.id))
-    const idsNosFiltrados = new Set(nosFiltrados.map((node) => node.id))
-    const arestasFiltradas = edges.filter(
-      (edge) => idsNosFiltrados.has(edge.from) && idsNosFiltrados.has(edge.to),
-    )
-
-    // Criação do grafo
-    const container = document.getElementById("mynetwork")
-    const dados = {
-      nodes: new vis.DataSet(nosFiltrados),
-      edges: new vis.DataSet(arestasFiltradas),
-    }
-    const network = new vis.Network(container, dados, {})
-  }
-
-  function compoeSelect(tabelasSelecionadas, descricoes = true) {
-    let selectClause = "SELECT "
-    let max_len = 0
-    tabelasSelecionadas.forEach((t) => {
-      Object.keys(tabelas[t] || {}).map((c) => {
-        max_len = Math.max(max_len, t.length + c.length + 1)
-      })
-    })
-    tabelasSelecionadas.forEach((tabela, index) => {
-      let colunas = tabelas[tabela]
-      // if (descricoes && colunas["#"]) {
-      //   selectClause += `\t/* ${colunas["#"]} */\n`
-      // }
-      Object.keys(colunas || {})
-        .filter(
-          (coluna) =>
-            !["IDFT", "#"].includes(coluna) &&
-            (incluirColunasExtras ||
-              ![
-                "RECCREATEDBY",
-                "RECCREATEDON",
-                "RECMODIFIEDBY",
-                "RECMODIFIEDON",
-              ].includes(coluna)),
-        )
-        .sort()
-        .forEach((coluna, colIndex, array) => {
-          selectClause += index === 0 && colIndex === 0 ? "" : "       "
-          selectClause += `${tabela}.${coluna}`.padEnd(max_len, " ")
-          selectClause += ` AS ${tabela}_${coluna}`
-          if (
-            index !== tabelasSelecionadas.length - 1 ||
-            colIndex !== array.length - 1
-          ) {
-            selectClause += ","
-          }
-          if (descricoes) {
-            let u = selectClause.length - selectClause.lastIndexOf(" AS ")
-            selectClause += " ".repeat(Math.abs(max_len + 5 - u))
-            selectClause += ` /* ${colunas[coluna]} */\n`
-          } else {
-            selectClause += "\n"
-          }
-        })
-    })
-    return selectClause !== "SELECT\n" ? selectClause : ""
-  }
-
-  function escreve_correspondencia_chaves(
-    tabela_origem,
-    tabela_destino,
-    descricoes = true,
-    pad = 0,
-  ) {
-    let relacoes_ = relacoes.filter(
-      (rel) =>
-        rel[0] === [tabela_origem, tabela_destino].sort()[0] &&
-        rel[1] === [tabela_origem, tabela_destino].sort()[1],
-    )
-    if (
-      relacoes_ === undefined ||
-      relacoes_.length === 0 ||
-      relacoes_[0] === undefined ||
-      relacoes_[0].length === 0 ||
-      relacoes_[0][2] === undefined ||
-      relacoes_[0][2].length === 0
-    )
-      return ""
-
-    relacoes_ = relacoes_[0][2]
-    joinClause = `${" ".repeat(
-      pad,
-    )}/* Relações de chaves entre ${tabela_origem} e ${tabela_destino} */\n`
-    if (relacoes_.length > 1) {
-      joinClause += `${" ".repeat(pad)}/* Existem `
-      joinClause += `${relacoes_.length} relações entre as tabelas `
-      joinClause += `${tabela_origem} e ${tabela_destino} */\n`
-      joinClause += `${" ".repeat(pad)}/* Provavelmente você deve `
-      joinClause += `escolher apenas uma */\n`
-    }
-    relacoes_.forEach((ligacao, index) => {
-      ;[chaves_origem, chaves_destino] = ligacao
-      if (relacoes_.length > 1) {
-        joinClause += `${" ".repeat(pad)}/* Alternativa ${index + 1} */\n`
-      }
-      if ([tabela_origem, tabela_destino].sort()[0] != tabela_origem) {
-        ;[chaves_origem, chaves_destino] = [chaves_destino, chaves_origem]
-      }
-      chaves_origem = chaves_origem.split(",")
-      chaves_destino = chaves_destino.split(",")
-
-      chaves_origem.forEach((chave_origem, idx) => {
-        joinClause += `${
-          idx === 0 ? " ".repeat(pad) + "ON" : " ".repeat(pad + 3) + "AND"
-        } `
-        joinClause += `${tabela_origem}.${chave_origem} = `
-        joinClause += `${tabela_destino}.${chaves_destino[idx]}`
-        joinClause += descricoes
-          ? ` /* ${tabelas[tabela_origem][chave_origem]} - ${
-              tabelas[tabela_destino][chaves_destino[idx]]
-            } */\n`
-          : "\n"
-      })
-    })
-    if (relacoes_.length > 1) {
-      joinClause += " ".repeat(pad) + "/* Fim alternativas */\n"
-    }
-    return joinClause
-  }
-
-  function compoeJoin(tabelasSelecionadas, tipo = "LEFT", descricoes = true) {
-    let joinClause = `/* IMPORTANTE: Por favor, revise os JOINs abaixo com atenção.
- * Esta consulta inclui todas as combinações possíveis de JOINs entre as tabelas selecionadas.
- * No entanto, algumas dessas combinações podem não ser adequadas para o que você precisa.
- * Certifique-se de ajustar ou remover os JOINs que não se encaixam no seu contexto específico.
- */`
-    joinClause += `\nFROM   ${tabelasSelecionadas[0]} (NOLOCK)`
-    joinClause += descricoes
-      ? ` /* ${tabelas[tabelasSelecionadas[0]]["#"]} */\n`
-      : "\n"
-
-    let visitadas = [tabelasSelecionadas[0]]
-    let pad = `       ${tipo}JOIN `.length - 3
-
-    tabelasSelecionadas.slice(1).forEach((tabela) => {
-      visitadas.push(tabela)
-      joinClause += `       ${tipo}JOIN ${tabela} (NOLOCK)`
-      joinClause += descricoes ? ` /* ${tabelas[tabela]["#"]} */\n` : "\n"
-      let antes = joinClause
-      visitadas.forEach((visitada) => {
-        joinClause += escreve_correspondencia_chaves(
-          visitada,
-          tabela,
-          descricoes,
-          pad,
-        )
-      })
-      if (antes === joinClause) {
-        joinClause += " ".repeat(pad) + "/* Não foi encontrada nenhuma relação "
-        joinClause += "para juntar essa tabela com as selecionadas */\n"
-      }
-    })
-    return joinClause !== "FROM undefined (NOLOCK)\n" ? joinClause : ""
-  }
-
-  function atualizarConsultaSQL() {
-    let elementoSQL = document.getElementById("sql-output")
-    let tabelasSelecionadas = Array.from(selecoes)
-    if (tabelasSelecionadas.length === 0) {
-      clausulaSQL = ""
-      elementoSQL.textContent = ""
-      return
-    }
-    let descricoesSelect = checkboxDescSelect.checked
-    let descricoesJoin = checkboxDescJoin.checked
-    let clausulaSelect = compoeSelect(tabelasSelecionadas, descricoesSelect)
-    let clausulaJoin = compoeJoin(
-      tabelasSelecionadas,
-      tipoJoinAtual,
-      descricoesJoin,
-    )
-    clausulaSQL = clausulaSelect + clausulaJoin
-    elementoSQL.textContent = clausulaSQL
-    Prism.highlightElement(elementoSQL)
-  }
+  // document.getElementById("btn-disconexas").addEventListener("click", () => {
+  //   document.getElementById("disconexas").classList.toggle("on")
+  //   this.classList.toggle("on")
+  // })
 
   Prism.languages.insertBefore("sql", "keyword", {
     table: {
@@ -397,4 +88,368 @@ document.addEventListener("DOMContentLoaded", function () {
       greedy: true,
     },
   })
-})
+}
+
+function notificar(texto, cor = "red", duracao_segundos = 4) {
+  const notificacao = document.getElementById("not-sql-copia")
+  notificacao.textContent = texto
+  // Se tem a cor declarada como var no CSS, usar ela, senao usar o parametro
+  const cor_ = getComputedStyle(document.documentElement).getPropertyValue(cor)
+  notificacao.style.backgroundColor = cor_ ? cor_ : cor
+
+  const coresClaras = new Set(["orange", "yellow", "mint", "cyan"])
+  const coresEscuras = new Set(["green", "blue", "indigo"])
+  if (coresClaras.has(cor)) notificacao.style.color = "black"
+  else if (coresEscuras.has(cor)) notificacao.style.color = "white"
+  else
+    notificacao.style.color = getComputedStyle(
+      document.documentElement,
+    ).getPropertyValue("text-color")
+
+  // Mostrar notificação
+  notificacao.style.display = "block"
+  // Ocultar notificação após X segundos
+  setTimeout(() => {
+    notificacao.style.display = "none"
+  }, duracao_segundos * 1000)
+}
+
+function copiarSQL() {
+  if (!clausulaSQL || !clausulaSQL.trim()) {
+    notificar("Consulta vazia. Por favor, selecione uma tabela.", "yellow")
+    return
+  }
+  navigator.clipboard
+    .writeText(clausulaSQL)
+    .then(() => {
+      notificar("Consulta SQL copiada com sucesso!", "mint", 3)
+    })
+    .catch((erro) => {
+      notificar("Não foi possível copiar a Consulta SQL.")
+      console.error("Erro ao copiar SQL:", erro)
+    })
+}
+
+function baixarSQL() {
+  if (!clausulaSQL || !clausulaSQL.trim()) {
+    notificar("Consulta vazia. Por favor, selecione uma tabela.", "yellow")
+    return
+  }
+  try {
+    const binario = new Blob([clausulaSQL], { type: "text/sql" })
+    const url = URL.createObjectURL(binario)
+    let agora = new Date()
+    agora.setTime(agora.getTime() - agora.getTimezoneOffset() * 60 * 1000)
+    agora = agora.toISOString().replace(/:|T/g, "-").substring(0, 19)
+    const a = document.createElement("a")
+    a.href = url
+    const nome = Array.from(selecoes)[0] ? Array.from(selecoes)[0] : "TOTVS-RM"
+    a.download = nome + "-" + agora + ".sql"
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (erro) {
+    notificar("Não foi possível baixar a Consulta SQL.")
+    console.error("Erro ao baixar SQL:", erro)
+  }
+}
+
+function limparSelecao() {
+  // Desmarcar todas as caixas de seleção
+  document
+    .querySelectorAll('#lst-tabelas input[type="checkbox"]')
+    .forEach((checkbox) => (checkbox.checked = false))
+  selecoes.clear()
+  atualizarGrafo()
+  atualizarConsultaSQL()
+}
+
+function exibirOcultarBtnVoltar() {
+  const btnVoltarTopo = document.getElementById("btn-voltar-topo")
+  if (
+    btnVoltarTopo &&
+    (document.body.scrollTop > 200 || document.documentElement.scrollTop > 200)
+  ) {
+    btnVoltarTopo.style.display = "block"
+  } else {
+    btnVoltarTopo.style.display = "none"
+  }
+}
+
+function voltarAoTopo() {
+  document.body.scrollTop = 0 // Para Safari
+  document.documentElement.scrollTop = 0 // Para Chrome, Firefox, IE e Opera
+}
+
+function configurarTema() {
+  let temaSalvo = localStorage.getItem("tema")
+  if (!temaSalvo) {
+    temaSalvo = "dark"
+    localStorage.setItem("tema", temaSalvo)
+  }
+  document.documentElement.setAttribute("data-theme", temaSalvo)
+  document.getElementById("btn-alternar-tema").textContent =
+    temaSalvo === "light" ? "🌙" : "☀️"
+}
+
+function alternarTema() {
+  const atual = document.documentElement.getAttribute("data-theme")
+  const novo = atual === "light" ? "dark" : "light"
+  localStorage.setItem("tema", novo)
+  document.documentElement.setAttribute("data-theme", novo)
+  this.textContent = novo === "light" ? "🌙" : "☀️"
+}
+
+function atualizarListaTabelas() {
+  if (!tabelas) return
+
+  const filtro = document.getElementById("in-busca-tabela").value || ""
+  const lstTabelas = document.getElementById("lst-tabelas")
+  lstTabelas.innerHTML = "" // Limpa a lista atual
+
+  const tabelas_ids_filtrados = Object.keys(tabelas || {}).filter((tabela) =>
+    (tabela + " " + tabelas[tabela]["#"])
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .includes(filtro.toLowerCase()),
+  )
+
+  tabelas_ids_filtrados.forEach((tabela) => {
+    const itemLista = document.createElement("li")
+    const checkbox = document.createElement("input")
+    const label = document.createElement("label")
+
+    checkbox.type = "checkbox"
+    checkbox.id = tabela
+    checkbox.value = tabela
+    checkbox.checked = selecoes.has(tabela)
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) selecoes.add(tabela)
+      else selecoes.delete(tabela)
+      atualizarGrafo()
+      atualizarSQL()
+    })
+
+    label.htmlFor = tabela
+    label.textContent = tabela + ": " + (tabelas[tabela]["#"] || "")
+
+    itemLista.appendChild(checkbox)
+    itemLista.appendChild(label)
+    lstTabelas.appendChild(itemLista)
+  })
+}
+
+function lerJSONTabelas(dados) {
+  tabelas = dados
+  atualizarListaTabelas()
+  Object.keys(tabelas).forEach((tabela) => {
+    nodes.push({
+      id: tabela,
+      label: tabela,
+      title: tabela,
+      group: tabela.substring(0, 2) == "SZ" ? "SZ" : tabela.substring(0, 1),
+    })
+  })
+}
+
+function lerJSONRelacoes(dados) {
+  relacoes = dados
+  relacoes.forEach((relacao) => {
+    edges.push({
+      from: relacao[0],
+      source: relacao[0],
+      to: relacao[1],
+      target: relacao[1],
+    })
+  })
+}
+
+function atualizarGrafo() {
+  const nosFiltrados = nodes.filter((node) => selecoes.has(node.id))
+  const idsNosFiltrados = new Set(nosFiltrados.map((node) => node.id))
+  const arestasFiltradas = edges.filter(
+    (edge) => idsNosFiltrados.has(edge.from) && idsNosFiltrados.has(edge.to),
+  )
+
+  const grafo = document.getElementById("grafo")
+  const dados = {
+    nodes: new vis.DataSet(nosFiltrados),
+    edges: new vis.DataSet(arestasFiltradas),
+  }
+  return new vis.Network(grafo, dados, {})
+}
+
+function comporSelect(selecionadas, descricoes = true) {
+  if (!selecionadas || selecionadas.length == 0) return ""
+
+  const incluirCol = document.getElementById("in-colunas-modificacao").checked
+
+  // Descobre o maior comprimento dos nomes das tabelas selecionadas para
+  // alinhar a formatacao
+  let preenche = 0
+  selecionadas.forEach((t) => {
+    Object.keys(tabelas[t] || {}).map((c) => {
+      preenche = Math.max(preenche, t.length + c.length + 1)
+    })
+  })
+
+  let clausula = "SELECT "
+  selecionadas.forEach((tabela, t) => {
+    let colunas = tabelas[tabela]
+    Object.keys(colunas || {})
+      .filter(
+        (coluna) =>
+          !["IDFT", "#"].includes(coluna) &&
+          (incluirCol ||
+            ![
+              "RECCREATEDBY",
+              "RECCREATEDON",
+              "RECMODIFIEDBY",
+              "RECMODIFIEDON",
+            ].includes(coluna)),
+      )
+      .sort()
+      .forEach((coluna, c, colunas_) => {
+        clausula += t == 0 && c == 0 ? "" : "       "
+        clausula += `${tabela}.${coluna}`.padEnd(preenche, " ")
+        clausula += ` AS ${tabela}_${coluna}`
+        clausula +=
+          t == selecionadas.length - 1 && c == colunas_.length - 1 ? "" : ","
+        if (descricoes) {
+          const ultimoAS = clausula.length - clausula.lastIndexOf(" AS ")
+          clausula += " ".repeat(Math.abs(preenche - ultimoAS + 5))
+          clausula += ` /* ${colunas[coluna]} */`
+        }
+        clausula += "\n"
+      })
+  })
+  return clausula
+}
+
+function correlacionarChaves(
+  tabelaOrigem,
+  tabelaDestino,
+  descricoes = true,
+  preenche = 0,
+) {
+  const tabelasOrdenadas = [tabelaOrigem, tabelaDestino].sort()
+  let relacoes_ = relacoes.filter(
+    (r) => r[0] === tabelasOrdenadas[0] && r[1] === tabelasOrdenadas[1],
+  )
+
+  if (
+    relacoes_ === undefined ||
+    relacoes_.length === 0 ||
+    relacoes_[0] === undefined ||
+    relacoes_[0].length === 0 ||
+    relacoes_[0][2] === undefined ||
+    relacoes_[0][2].length === 0
+  )
+    return ""
+  relacoes_ = relacoes_[0][2]
+
+  let clausula = " ".repeat(preenche)
+  clausula += `/* Relações de chaves entre ${tabelaOrigem} e ${tabelaDestino} */\n`
+
+  if (relacoes_.length > 1) {
+    clausula += `${" ".repeat(preenche)}/* Existem ${relacoes_.length} relações`
+    clausula += ` entre as tabelas ${tabelaOrigem} e ${tabelaDestino} */\n`
+    clausula += `${" ".repeat(preenche)}/* Provavelmente você deve escolher `
+    clausula += `apenas uma */\n`
+  }
+
+  relacoes_.forEach(([chavesOrigem, chavesDestino], r) => {
+    if (relacoes_.length > 1)
+      clausula += `${" ".repeat(preenche)}/* Alternativa ${r} */\n`
+
+    if (tabelasOrdenadas[0] != tabelaOrigem) {
+      ;[chavesOrigem, chavesDestino] = [chavesDestino, chavesOrigem]
+    }
+
+    chavesOrigem = chavesOrigem.split(",")
+    chavesDestino = chavesDestino.split(",")
+
+    chavesOrigem.forEach((chaveOrigem, c) => {
+      if (c == 0) clausula += " ".repeat(preenche) + "ON "
+      else clausula += " ".repeat(preenche + 3) + "AND "
+
+      clausula += `${tabelaOrigem}.${chaveOrigem} = `
+      clausula += `${tabelaDestino}.${chavesDestino[c]}`
+
+      if (descricoes) {
+        clausula += ` /* ${tabelas[tabelaOrigem][chaveOrigem]} - `
+        clausula += `${tabelas[tabelaDestino][chavesDestino[c]]} */`
+      }
+
+      clausula += "\n"
+    })
+  })
+  if (relacoes_.length > 1)
+    clausula += " ".repeat(preenche) + "/* Fim alternativas */\n"
+  return clausula
+}
+
+function comporJoin(selecionadas, tipo = "LEFT ", descricoes = true) {
+  if (!selecionadas || selecionadas.length == 0) return ""
+
+  let clausula = "/* IMPORTANTE: Por favor, revise os JOINs abaixo com atenção."
+  clausula += "\n * Esta consulta inclui todas as combinações possíveis de "
+  clausula += "JOINs entre as tabelas selecionadas.\n * No entanto, algumas "
+  clausula += "dessas combinações podem não ser adequadas para o que você "
+  clausula += "precisa.\n * Certifique-se de ajustar ou remover os JOINs que "
+  clausula += "não se encaixam no seu contexto específico.\n */"
+
+  clausula += `\nFROM   ${selecionadas[0]} (NOLOCK)`
+  if (descricoes) clausula += ` /* ${tabelas[selecionadas[0]]["#"]} */`
+  clausula += "\n"
+
+  let visitadas = [selecionadas[0]]
+  let preenche = `       ${tipo}JOIN `.length - 3
+
+  selecionadas.slice(1).forEach((tabela) => {
+    visitadas.push(tabela)
+
+    clausula += `       ${tipo}JOIN ${tabela} (NOLOCK)`
+    if (descricoes) clausula += ` /* ${tabelas[tabela]["#"]} */`
+    clausula += "\n"
+
+    const correlacoes = visitadas
+      .map((v) => correlacionarChaves(v, tabela, descricoes, preenche))
+      .join("")
+
+    if (!correlacoes) {
+      clausula += " ".repeat(preenche) + "/* Não foi possível encontrar relação"
+      clausula += " de chaves para juntar essa tabela com as anteriores. */\n"
+    } else {
+      clausula += correlacoes
+    }
+  })
+  return clausula
+}
+
+function atualizarSQL() {
+  const sql = document.getElementById("sql")
+  const selecionadas = Array.from(selecoes)
+
+  if (selecionadas.length === 0) {
+    clausulaSQL = ""
+    sql.textContent = ""
+    return ""
+  }
+
+  const descSelect = document.getElementById("in-descricoes-select").checked
+  const clausulaSelect = comporSelect(selecionadas, descSelect)
+
+  const tipoJoin = document.querySelector(
+    'input[name="in-tipo-join"]:checked',
+  ).value
+  const descJoin = document.getElementById("in-descricoes-join").checked
+  const clausulaJoin = comporJoin(selecionadas, tipoJoin, descJoin)
+
+  clausulaSQL = clausulaSelect + clausulaJoin
+  sql.textContent = clausulaSQL
+  Prism.highlightElement(sql)
+  return clausulaSQL
+}

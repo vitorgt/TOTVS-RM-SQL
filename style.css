@@ -2,36 +2,38 @@
   /* Tema escuro (padrão) */
   --background-color: #121212;
   --text-color: #ffffff;
-  --button-background: #333333;
-  --button-background-hover: #6e6e6e;
-  --button-text: #ffffff;
-  /* --sql-keyword: #eec937; */
-  /* --sql-keyword: #ffd60a; */
-  --sql-keyword: #6ce0db;
-  /* --sql-comment: #909090; */
-  --sql-comment: #8e8e93;
-  /* --sql-column: #64599e; */
-  --sql-column: #5e5ce6;
-  --green: #30d158;
-  --red: #ff453a;
+  --red: rgb(255, 65, 54);
+  --orange: rgb(255, 169, 20);
+  --yellow: rgb(255, 212, 38);
+  --green: rgb(49, 222, 75);
+  --mint: rgb(108, 224, 219);
+  --cyan: rgb(112, 215, 255);
+  --blue: rgb(64, 156, 255);
+  --indigo: rgb(125, 122, 255);
+  --gray0: rgb(152, 152, 157);
+  --gray1: rgb(54, 54, 56);
 }
 
 [data-theme="light"] {
   /* Tema claro */
   --background-color: #ffffff;
   --text-color: #000000;
-  --button-background: #bebebe;
-  --button-background-hover: #777777;
-  --button-text: #000000;
-  /* --sql-keyword: #d0b344; */
-  /* --sql-keyword: #da9732; */
-  --sql-keyword: #02bdb4;
-  /* --sql-comment: #909090; */
-  --sql-comment: #8e8e93;
-  /* --sql-column: #64599e; */
-  --sql-column: #5856d6;
-  --green: #34c759;
-  --red: #ff3b30;
+  --red: rgb(194, 6, 24);
+  --orange: rgb(245, 139, 0);
+  --yellow: rgb(245, 194, 0);
+  --green: rgb(30, 195, 55);
+  --mint: rgb(0, 189, 180);
+  --cyan: rgb(65, 175, 220);
+  --blue: rgb(0, 122, 245);
+  --indigo: rgb(54, 52, 163);
+  --gray0: rgb(97, 97, 101);
+  --gray1: rgb(188, 188, 192);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -40,146 +42,112 @@ body {
   font-family: Arial, sans-serif;
 }
 
+header {
+  padding: 20px 50px;
+}
+
 h1,
 h2 {
   text-align: center;
 }
 
-#title {
-  padding: 0 50px;
-}
-
-#container {
+#secao-tabelas {
   display: flex;
   flex-direction: column;
-  padding: 0 10px;
+  margin: 20px;
 }
-#graph-container,
-#mynetwork {
-  width: 100%;
-  height: 400px;
-  /* border: 1px solid #ddd; */
-  margin-bottom: 20px;
+
+.pilha-h {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center; /* Centraliza verticalmente os itens */
+  gap: 20px;
 }
-#sql-output {
-  width: 100%;
-  /* height: 600px; */
-  /* background-color: #d1d1d1; */
-  /* border: 1px solid #ddd; */
-  overflow-y: scroll;
-  /* white-space: pre-wrap; */
-  /* padding: 10px; */
+
+.pilha-v {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-#search-box {
+
+.in-busca {
   width: 95%;
   padding: 10px;
-  /* margin-bottom: 20px; */
   font-size: 16px;
   background-color: var(--background-color);
   color: var(--text-color);
   border-radius: 5px;
-  border: 1px solid var(--button-background);
-  /* border: 0; */
+  border: 1px solid var(--gray1);
   outline: 0;
 }
 
-#search-box > input:focus {
+input.in-busca:focus {
   outline: none !important;
 }
 
-.table-list {
+#lst-tabelas {
   list-style: none;
   padding: 0;
   width: 100%;
-  height: 342px;
+  height: 353px;
   overflow-y: scroll;
 }
-.table-list li {
-  margin-bottom: 10px;
+
+#lst-tabelas li {
+  margin: 10px;
 }
 
-/* Mídia query para telas maiores (tablets e desktops) */
-@media (min-width: 768px) {
-  #container {
-    flex-direction: row;
-  }
-  #container > div {
-    flex: 1;
-  }
+#secao-grafo,
+#grafo {
+  width: 100%;
+  height: 400px;
+  margin-bottom: 20px;
+}
+
+#secao-sql {
+  margin: 20px;
 }
 
 /* Sobrescrevendo os estilos padrões do Prism.js */
-
-code[class*="language-sql"],
 pre[class*="language-sql"],
-code,
+code[class*="language-sql"],
 pre,
+code,
 .language-sql,
 .token {
-  /* color: black; */
+  width: 100%;
   background: none;
   background-color: none;
   text-shadow: none;
   color: var(--text-color);
+  overflow-x: auto;
+  padding: 0;
+  margin: 0;
 }
 /* Palavras reservadas */
 .language-sql .token.keyword,
 .language-sql .token.operator {
-  color: var(--sql-keyword);
+  color: var(--mint);
   font-weight: bold;
   background: none;
   background-color: none;
   text-shadow: none;
 }
-
 /* Comentários */
 .language-sql .token.comment,
 .language-sql .token.punctuation {
-  color: var(--sql-comment);
+  color: var(--gray0);
   font-style: italic;
 }
-/* Tabelas e Colunas (não há uma classe específica no Prism.js para tabelas e colunas,
-       então você teria que criar uma lógica adicional para isso) */
+/* Tabelas e Colunas */
 .language-sql .token.column,
 .language-sql .token.table {
-  color: var(--sql-column);
+  color: var(--indigo);
   font-weight: bold;
 }
 
-#back-to-top {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: var(--button-background);
-  color: var(--button-text);
-  border: none;
-  border-radius: 5px;
-  padding: 7px 10px 10px 10px;
-  cursor: pointer;
-  display: none; /* Inicialmente escondido */
-  font-size: 20px;
-  transform: rotate(-90deg); /* Gira a seta 90 graus no sentido anti-horário */
-}
-
-#back-to-top:hover,
-#theme-toggle:hover {
-  background-color: var(--button-background-hover);
-}
-
-#theme-toggle {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background-color: var(--button-background);
-  color: var(--button-text);
-  border: none;
-  border-radius: 5px;
-  padding: 5px;
-  cursor: pointer;
-  /* font-size: 20px; */
-}
-
-.notification {
+.notificacao {
   display: none;
   position: fixed;
   top: 20px;
@@ -188,42 +156,110 @@ pre,
   background-color: var(--green);
   color: var(--text-color);
   border-radius: 5px;
-  /* box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5); */
   z-index: 1000;
 }
 
-.h-stack {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center; /* Centraliza verticalmente os itens */
-  gap: 20px; /* Espaçamento entre os elementos da h-stack */
-  /* margin-bottom: 20px; */
+#btn-voltar-topo {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--gray1);
+  color: var(--text-color);
+  border: none;
+  border-radius: 5px;
+  padding: 7px 10px 10px 10px;
+  cursor: pointer;
+  display: none; /* Inicialmente escondido */
+  font-size: 20px;
+  transform: rotate(-90deg);
 }
 
-.v-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px; /* Espaçamento entre os elementos da v-stack */
+#btn-alternar-tema {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: var(--gray1);
+  color: var(--text-color);
+  border: none;
+  border-radius: 5px;
+  padding: 5px;
+  cursor: pointer;
 }
 
-/* Mídia query para telas menores */
-@media (max-width: 768px) {
-  .h-stack {
-    flex-direction: column;
-  }
-}
-#source-code-link {
+#btn-github {
   position: absolute;
   top: 20px;
   right: 20px;
   padding: 5px 7px;
-  background-color: var(--button-background);
-  color: var(--button-text);
+  background-color: var(--gray1);
+  color: var(--text-color);
   text-decoration: none;
   border-radius: 5px;
 }
 
-#source-code-link:hover {
-  background-color: var(--button-background-hover);
+#btn-voltar-topo:hover,
+#btn-alternar-tema:hover,
+#btn-github:hover {
+  background-color: var(--gray0);
+}
+
+#btn-disconexas {
+  position: fixed;
+  top: 100px;
+  right: -5px;
+  background-color: var(--orange);
+  color: var(--text-color);
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  font-size: 24px;
+  border-radius: 5px;
+  -webkit-transition-duration: 0.3s;
+  -moz-transition-duration: 0.3s;
+  -o-transition-duration: 0.3s;
+  transition-duration: 0.3s;
+}
+
+#btn-disconexas.on {
+  right: 49.5%;
+}
+
+/* aside */
+#disconexas {
+  background: var(--background-color);
+  background-color: var(--background-color);
+  color: var(--text-color);
+  position: fixed;
+  top: 0;
+  right: -50%; /* Inicialmente oculto */
+  width: 50%;
+  height: 100%;
+  overflow-y: scroll;
+  -webkit-transition-duration: 0.3s;
+  -moz-transition-duration: 0.3s;
+  -o-transition-duration: 0.3s;
+  transition-duration: 0.3s;
+}
+
+#disconexas.on {
+  right: 0;
+}
+
+@media (min-width: 768px) {
+  #secao-tabelas {
+    flex-direction: row;
+  }
+  #secao-tabelas > div {
+    flex: 1;
+  }
+}
+@media (max-width: 768px) {
+  .pilha-h {
+    flex-direction: column;
+    gap: 5px;
+  }
+  #disconexas {
+    width: 100%;
+    right: -100%; /* Inicialmente oculto */
+  }
 }

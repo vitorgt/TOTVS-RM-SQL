@@ -1,104 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gerador de Consulta SQL - TOTVS RM</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link
       href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css"
       rel="stylesheet" />
     <link rel="stylesheet" type="text/css" href="style.css" />
-    <script src="sql.js"></script>
   </head>
   <body>
-    <div id="title">
+    <header>
       <h1>Gerador de Consulta SQL - TOTVS RM (12.1.2306)</h1>
-    </div>
+    </header>
 
-    <div id="container">
-      <div>
-        <div class="h-stack">
-          <h2>Selecione as Tabelas</h2>
-          <button id="clear-selection">Limpar Seleção</button>
-        </div>
-        <input type="text" id="search-box" placeholder="Buscar tabela..." />
-        <ul id="table-list" class="table-list">
-          <!-- As tabelas serão listadas aqui -->
-        </ul>
+    <main>
+      <div id="secao-tabelas">
+        <section>
+          <div class="pilha-h">
+            <h2>Selecione Tabelas</h2>
+            <button id="btn-limpar-selecao">Limpar Seleção</button>
+          </div>
+          <input
+            type="text"
+            class="in-busca"
+            id="in-busca-tabela"
+            placeholder="Buscar tabela..." />
+          <ul id="lst-tabelas">
+            <!-- As tabelas serão listadas aqui pelo js -->
+          </ul>
+        </section>
+
+        <section id="secao-grafo">
+          <h2>Visualização de Relações de Tabelas</h2>
+          <div id="grafo"></div>
+        </section>
       </div>
 
-      <div id="graph-container">
-        <h2>Visualização do Grafo de Relações de Tabelas</h2>
-        <div id="mynetwork"></div>
-      </div>
-    </div>
+      <section id="secao-sql">
+        <h2>Consulta SQL Gerada</h2>
+        <div class="pilha-h">
+          <div class="pilha-v">
+            <button id="btn-sql-copiar">Copiar SQL</button>
+            <button id="btn-sql-baixar">Baixar SQL</button>
+          </div>
 
-    <div>
-      <h2>Consulta SQL Gerada</h2>
-
-      <div class="h-stack">
-        <div class="v-stack">
-          <button id="copy-sql">Copiar SQL</button>
-          <button id="download-sql">Baixar SQL</button>
-        </div>
-
-        <div class="v-stack">
-          <label>
-            <input type="checkbox" id="toggle-desc-select" checked />
-            Mostrar descrições no SELECT
-          </label>
-          <label>
-            <input type="checkbox" id="toggle-desc-join" checked />
-            Mostrar descrições no JOIN
-          </label>
-          <label>
-            <input type="checkbox" id="toggle-extra-columns" />
-            Incluir Colunas Criação e Modificação
-          </label>
-        </div>
-
-        <form id="join-type-form">
-          <div class="v-stack">
+          <div class="pilha-v">
             <label>
-              <input type="radio" name="join-type" value="" /> Inner Join
+              <input type="checkbox" id="in-descricoes-select" checked />
+              Mostrar descrições no SELECT
             </label>
             <label>
-              <input type="radio" name="join-type" value="LEFT " checked />
+              <input type="checkbox" id="in-descricoes-join" checked />
+              Mostrar descrições no JOIN
+            </label>
+            <label>
+              <input type="checkbox" id="in-colunas-modificacao" />
+              Incluir Colunas Criação e Modificação
+            </label>
+          </div>
+
+          <form id="frm-tipo-join" class="pilha-v">
+            <label>
+              <input type="radio" name="in-tipo-join" value="" /> Inner Join
+            </label>
+            <label>
+              <input type="radio" name="in-tipo-join" value="LEFT " checked />
               Left Join
             </label>
             <label>
-              <input type="radio" name="join-type" value="RIGHT " /> Right Join
+              <input type="radio" name="in-tipo-join" value="RIGHT " /> Right
+              Join
             </label>
             <label>
-              <input type="radio" name="join-type" value="FULL OUTER " />
+              <input type="radio" name="in-tipo-join" value="FULL OUTER " />
               Full Outer Join
             </label>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
 
-      <pre><code id="sql-output" class="language-sql"></code></pre>
-    </div>
+        <pre><code id="sql" class="language-sql"></code></pre>
+      </section>
+    </main>
 
-    <button id="back-to-top" title="Voltar para cima">&#10140;</button>
-
-    <div id="notification" class="notification">
+    <div class="notificacao" id="not-sql-copia">
       Consulta SQL copiada com sucesso!
     </div>
-
-    <button id="theme-toggle">☀️</button>
-
+    <button id="btn-voltar-topo" title="Voltar para o topo da página">
+      &#10140;
+    </button>
+    <button id="btn-alternar-tema" title="Alternar Tema">☀️</button>
     <a
       href="https://github.com/vitorgt/TOTVS-RM-SQL"
-      id="source-code-link"
+      id="btn-github"
       target="_blank"
-      title="Código fonte"
+      title="Acessar código fonte no GitHub"
       >&#10094;&#10095;</a
     >
+    <!-- <button id="btn-disconexas" title="Existem tabelas desconexas! Veja mais.">
+      ⚠️
+    </button>
+    <aside id="disconexas"></aside> -->
 
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-core.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-sql.min.js"></script>
+    <!-- Scripts -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-core.min.js"
+      defer></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-sql.min.js"
+      defer></script>
+    <script
+      src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
+      defer></script>
+    <script src="sql.js" defer></script>
   </body>
 </html>
