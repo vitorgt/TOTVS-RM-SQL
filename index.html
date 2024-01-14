@@ -5,11 +5,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gerador de Consulta SQL - TOTVS RM</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="web/favicon.ico" />
     <link
       href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css"
       rel="stylesheet" />
-    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="web/style.css" />
   </head>
   <body>
     <header>
@@ -18,7 +18,7 @@
 
     <main>
       <div id="secao-tabelas">
-        <section>
+        <section id="secao-selecao">
           <div class="pilha-h">
             <h2>Selecione Tabelas</h2>
             <button id="btn-limpar-selecao">Limpar Seleção</button>
@@ -58,7 +58,11 @@
             </label>
             <label>
               <input type="checkbox" id="in-colunas-modificacao" />
-              Incluir Colunas Criação e Modificação
+              Incluir colunas criação e modificação
+            </label>
+            <label>
+              <input type="checkbox" id="in-tabelas-disconexas" />
+              (Não recomendado) Incluir tabelas disconexas
             </label>
           </div>
 
@@ -99,10 +103,37 @@
       title="Acessar código fonte no GitHub"
       >&#10094;&#10095;</a
     >
-    <!-- <button id="btn-disconexas" title="Existem tabelas desconexas! Veja mais.">
+
+    <button id="btn-disconexas" title="Existem tabelas desconexas! Veja mais.">
       ⚠️
     </button>
-    <aside id="disconexas"></aside> -->
+    <aside id="disconexas">
+      <button id="btn-disconexas-fechar">&#10006;</button>
+      <section>
+        <h2>Possíveis Relações para Tabelas Disconexas</h2>
+        <p>
+          ATENÇÂO! Nem todas as seguintes ligações podem fazer sentido. Use
+          extrema cautela!
+        </p>
+        <p>
+          Os <span class="txt-verde">🟢 circulos verdes</span> são as tabelas
+          selecionadas conectadas.
+        </p>
+        <p>
+          Os <span class="txt-vermelho">🔴 circulos vermelhos</span> são as
+          tabelas selecionadas disconexas.
+        </p>
+        <p>
+          As <span class="txt-amarelo">🟨 caixas amarelas</span> são tabelas que
+          relacionam as conectadas e as disconexas.
+        </p>
+
+        <div id="grafo-disconexas"></div>
+        <ul id="lst-conexoes">
+          <!-- Os caminhos serão listados aqui pelo js -->
+        </ul>
+      </section>
+    </aside>
 
     <!-- Scripts -->
     <script
@@ -114,6 +145,10 @@
     <script
       src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"
       defer></script>
-    <script src="sql.js" defer></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/graphology/0.25.4/graphology.umd.min.js"
+      defer></script>
+    <script src="web/graphology.min.js" defer></script>
+    <script src="web/sql.js" defer></script>
   </body>
 </html>

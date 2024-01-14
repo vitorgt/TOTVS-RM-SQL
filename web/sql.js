@@ -4,6 +4,7 @@ let relacoes = []
 let nodes = []
 let edges = []
 let clausulaSQL = ""
+let grafo = null
 
 fetch(
   "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/tabelas.json",
@@ -56,6 +57,9 @@ function DOMpronto() {
     .getElementById("in-colunas-modificacao")
     .addEventListener("change", atualizarSQL)
   document
+    .getElementById("in-tabelas-disconexas")
+    .addEventListener("change", atualizarSQL)
+  document
     .getElementById("frm-tipo-join")
     .addEventListener("change", atualizarSQL)
 
@@ -67,10 +71,18 @@ function DOMpronto() {
     .getElementById("btn-alternar-tema")
     .addEventListener("click", alternarTema)
 
-  // document.getElementById("btn-disconexas").addEventListener("click", () => {
-  //   document.getElementById("disconexas").classList.toggle("on")
-  //   this.classList.toggle("on")
-  // })
+  document.getElementById("btn-disconexas").addEventListener("click", () => {
+    document.getElementById("disconexas").classList.toggle("ativo")
+    document.getElementById("btn-disconexas").classList.toggle("ativo")
+    document.getElementById("btn-disconexas-fechar").classList.toggle("ativo")
+  })
+  document
+    .getElementById("btn-disconexas-fechar")
+    .addEventListener("click", () => {
+      document.getElementById("disconexas").classList.remove("ativo")
+      document.getElementById("btn-disconexas").classList.remove("ativo")
+      document.getElementById("btn-disconexas-fechar").classList.remove("ativo")
+    })
 
   Prism.languages.insertBefore("sql", "keyword", {
     table: {
@@ -161,8 +173,9 @@ function limparSelecao() {
     .querySelectorAll('#lst-tabelas input[type="checkbox"]')
     .forEach((checkbox) => (checkbox.checked = false))
   selecoes.clear()
-  atualizarGrafo()
-  atualizarConsultaSQL()
+  visualizarGrafo()
+  atualizarSQL()
+  verificarTabelasDesconexas()
 }
 
 function exibirOcultarBtnVoltar() {
@@ -228,8 +241,9 @@ function atualizarListaTabelas() {
     checkbox.addEventListener("change", () => {
       if (checkbox.checked) selecoes.add(tabela)
       else selecoes.delete(tabela)
-      atualizarGrafo()
+      visualizarGrafo()
       atualizarSQL()
+      verificarTabelasDesconexas()
     })
 
     label.htmlFor = tabela
@@ -249,6 +263,7 @@ function lerJSONTabelas(dados) {
       id: tabela,
       label: tabela,
       title: tabela,
+      key: tabela,
       group: tabela.substring(0, 2) == "SZ" ? "SZ" : tabela.substring(0, 1),
     })
   })
@@ -264,9 +279,10 @@ function lerJSONRelacoes(dados) {
       target: relacao[1],
     })
   })
+  grafo = criarGrafo()
 }
 
-function atualizarGrafo() {
+function visualizarGrafo() {
   const nosFiltrados = nodes.filter((node) => selecoes.has(node.id))
   const idsNosFiltrados = new Set(nosFiltrados.map((node) => node.id))
   const arestasFiltradas = edges.filter(
@@ -279,6 +295,128 @@ function atualizarGrafo() {
     edges: new vis.DataSet(arestasFiltradas),
   }
   return new vis.Network(grafo, dados, {})
+}
+
+function criarGrafo() {
+  if (!edges || edges.length == 0) return null
+  if (grafo) return grafo
+
+  const grafo_ = new graphology.Graph({ type: "undirected" })
+  edges.forEach((edge) => {
+    grafo_.mergeEdge(edge.source, edge.target)
+  })
+  return grafo_
+}
+
+function visualizarGrafoDisconexas(conexos, conexao, disconexos) {
+  const nosColoridos = [
+    ...conexos.map((id) => ({
+      id,
+      label: id,
+      color: "rgb(49, 222, 75)", // verde
+    })),
+    ...conexao.map((id) => ({
+      id,
+      label: id,
+      color: "rgb(255, 169, 20)", // amarelo
+      shape: "box",
+    })),
+    ...disconexos.map((id) => ({
+      id,
+      label: id,
+      color: "rgb(255, 65, 54)", // vermelho
+    })),
+  ]
+  const idsNosColoridos = new Set(nosColoridos.map((node) => node.id))
+  const arestasFiltradas = edges.filter(
+    (edge) => idsNosColoridos.has(edge.from) && idsNosColoridos.has(edge.to),
+  )
+
+  const grafo = document.getElementById("grafo-disconexas")
+  const dados = {
+    nodes: new vis.DataSet(nosColoridos),
+    edges: new vis.DataSet(arestasFiltradas),
+  }
+  new vis.Network(grafo, dados, {})
+}
+
+function listarCaminhosConexao(caminhosConexao) {
+  const lista = document.getElementById("lst-conexoes")
+  lista.innerHTML = ""
+  caminhosConexao.forEach((caminho) => {
+    const item = document.createElement("li")
+    item.textContent = caminho
+    lista.appendChild(item)
+  })
+}
+
+// Função para encontrar caminhos entre dois nós
+function encontrarCaminhos(origem, destino, k = 7, maxProfundidade = 7) {
+  let caminhos = []
+  for (let prof = 0; caminhos.length < 2 && prof <= maxProfundidade; prof++)
+    caminhos.push(...allSimplePaths(grafo, origem, destino, { maxDepth: prof }))
+  return caminhos.slice(0, k)
+}
+
+function verificarTabelasDesconexas() {
+  let selecionadas = Array.from(selecoes)
+  let ausentesGrafo = []
+
+  selecionadas = selecionadas.filter((t) => {
+    if (!grafo.hasNode(t)) {
+      ausentesGrafo.push(t)
+      return false
+    }
+    return true
+  })
+
+  const subgrafoSelecionadas = subgraph(grafo, selecionadas)
+  const maiorSubgrafoConecatado =
+    largestConnectedComponentSubgraph(subgrafoSelecionadas)
+  const elementosConectados = Array.from(maiorSubgrafoConecatado.nodes())
+  const elementosDesconectados = selecionadas.filter(
+    (t) => !elementosConectados.includes(t),
+  )
+
+  const btn = document.getElementById("btn-disconexas")
+  if (selecionadas.length == 0 || elementosDesconectados.length == 0) {
+    document.getElementById("disconexas").classList.remove("on")
+    btn.classList.remove("on")
+    setTimeout(() => {
+      btn.style.display = "none"
+    }, 350)
+    return
+  } else {
+    btn.style.display = "block"
+  }
+
+  const elementosConexao = new Set()
+  const caminhosConexao = new Set()
+  elementosConectados.forEach((ec) => {
+    elementosDesconectados.forEach((ed) => {
+      const caminhos = encontrarCaminhos(ec, ed)
+      caminhos.forEach((caminho) => {
+        caminhosConexao.add(caminho.join(" ↔ "))
+        caminho.slice(1, -1).forEach((tabela) => elementosConexao.add(tabela))
+      })
+    })
+  })
+
+  caminhosConexao.add(
+    ...ausentesGrafo.map(
+      (t) => `Não foi possível encontrar meios de relacionar a tabela ${t}.`,
+    ),
+  )
+
+  visualizarGrafoDisconexas(
+    elementosConectados,
+    Array.from(elementosConexao).filter(
+      (t) =>
+        !elementosConectados.includes(t) && !elementosDesconectados.includes(t),
+    ),
+    elementosDesconectados,
+  )
+  listarCaminhosConexao(caminhosConexao)
 }
 
 function comporSelect(selecionadas, descricoes = true) {
@@ -431,7 +569,25 @@ function comporJoin(selecionadas, tipo = "LEFT ", descricoes = true) {
 
 function atualizarSQL() {
   const sql = document.getElementById("sql")
+
   const selecionadas = Array.from(selecoes)
+  let elementosConectados = selecionadas
+
+  let disconexas = document.getElementById("in-tabelas-disconexas")
+  disconexas.disabled = false
+  if (!disconexas.checked) {
+    try {
+      const subgrafoSelecionadas = subgraph(grafo, selecionadas)
+      const maiorSubgrafoConecatado =
+        largestConnectedComponentSubgraph(subgrafoSelecionadas)
+      elementosConectados = Array.from(maiorSubgrafoConecatado.nodes())
+    } catch (erro) {
+      disconexas.checked = true
+      disconexas.disabled = true
+      console.error(erro)
+      console.log("Assumindo tabelas selecionadas.")
+    }
+  }
 
   if (selecionadas.length === 0) {
     clausulaSQL = ""
@@ -440,13 +596,13 @@ function atualizarSQL() {
   }
 
   const descSelect = document.getElementById("in-descricoes-select").checked
-  const clausulaSelect = comporSelect(selecionadas, descSelect)
+  const clausulaSelect = comporSelect(elementosConectados, descSelect)
 
   const tipoJoin = document.querySelector(
     'input[name="in-tipo-join"]:checked',
   ).value
   const descJoin = document.getElementById("in-descricoes-join").checked
-  const clausulaJoin = comporJoin(selecionadas, tipoJoin, descJoin)
+  const clausulaJoin = comporJoin(elementosConectados, tipoJoin, descJoin)
 
   clausulaSQL = clausulaSelect + clausulaJoin
   sql.textContent = clausulaSQL
