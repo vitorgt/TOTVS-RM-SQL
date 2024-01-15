@@ -83,6 +83,17 @@ function DOMpronto() {
       document.getElementById("btn-disconexas").classList.remove("ativo")
       document.getElementById("btn-disconexas-fechar").classList.remove("ativo")
     })
+  document.addEventListener("keydown", (evt) => {
+    evt = evt || window.event
+    if (
+      ("key" in evt && (evt.key === "Escape" || evt.key === "Esc")) ||
+      ("keyCode" in evt && evt.keyCode === 27)
+    ) {
+      document.getElementById("disconexas").classList.remove("ativo")
+      document.getElementById("btn-disconexas").classList.remove("ativo")
+      document.getElementById("btn-disconexas-fechar").classList.remove("ativo")
+    }
+  })
 
   Prism.languages.insertBefore("sql", "keyword", {
     table: {
