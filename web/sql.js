@@ -71,27 +71,20 @@ function DOMpronto() {
     .getElementById("btn-alternar-tema")
     .addEventListener("click", alternarTema)
 
-  document.getElementById("btn-disconexas").addEventListener("click", () => {
-    document.getElementById("disconexas").classList.toggle("ativo")
-    document.getElementById("btn-disconexas").classList.toggle("ativo")
-    document.getElementById("btn-disconexas-fechar").classList.toggle("ativo")
-  })
+  document
+    .getElementById("btn-disconexas")
+    .addEventListener("click", () => fecharDisconexas(true))
   document
     .getElementById("btn-disconexas-fechar")
-    .addEventListener("click", () => {
-      document.getElementById("disconexas").classList.remove("ativo")
-      document.getElementById("btn-disconexas").classList.remove("ativo")
-      document.getElementById("btn-disconexas-fechar").classList.remove("ativo")
-    })
+    .addEventListener("click", fecharDisconexas)
+
   document.addEventListener("keydown", (evt) => {
     evt = evt || window.event
     if (
       ("key" in evt && (evt.key === "Escape" || evt.key === "Esc")) ||
       ("keyCode" in evt && evt.keyCode === 27)
     ) {
-      document.getElementById("disconexas").classList.remove("ativo")
-      document.getElementById("btn-disconexas").classList.remove("ativo")
-      document.getElementById("btn-disconexas-fechar").classList.remove("ativo")
+      fecharDisconexas()
     }
   })
 
@@ -111,6 +104,18 @@ function DOMpronto() {
       greedy: true,
     },
   })
+}
+
+function fecharDisconexas(alternar = false) {
+  if (alternar) {
+    document.getElementById("disconexas").classList.toggle("ativo")
+    document.getElementById("btn-disconexas").classList.toggle("ativo")
+    document.getElementById("btn-disconexas-fechar").classList.toggle("ativo")
+  } else {
+    document.getElementById("disconexas").classList.remove("ativo")
+    document.getElementById("btn-disconexas").classList.remove("ativo")
+    document.getElementById("btn-disconexas-fechar").classList.remove("ativo")
+  }
 }
 
 function notificar(texto, cor = "red", duracao_segundos = 4) {
@@ -339,9 +344,17 @@ function visualizarGrafoDisconexas(conexos, conexao, disconexos) {
     })),
   ]
   const idsNosColoridos = new Set(nosColoridos.map((node) => node.id))
-  const arestasFiltradas = edges.filter(
-    (edge) => idsNosColoridos.has(edge.from) && idsNosColoridos.has(edge.to),
-  )
+  const arestasFiltradas = edges
+    .filter(
+      (edge) => idsNosColoridos.has(edge.from) && idsNosColoridos.has(edge.to),
+    )
+    .map((edge) => {
+      if (conexos.includes(edge.from) || conexos.includes(edge.to))
+        return { ...edge, color: "rgb(49, 222, 75)" } // verde
+      if (disconexos.includes(edge.from) || disconexos.includes(edge.to))
+        return { ...edge, color: "rgb(255, 65, 54)" } // vermelho
+      return { ...edge, color: "rgb(255, 169, 20)" } // amarelo
+    })
 
   const grafo = document.getElementById("grafo-disconexas")
   const dados = {
@@ -389,16 +402,14 @@ function verificarTabelasDesconexas() {
     (t) => !elementosConectados.includes(t),
   )
 
-  const btn = document.getElementById("btn-disconexas")
   if (selecionadas.length == 0 || elementosDesconectados.length == 0) {
-    document.getElementById("disconexas").classList.remove("on")
-    btn.classList.remove("on")
+    fecharDisconexas()
     setTimeout(() => {
-      btn.style.display = "none"
+      document.getElementById("btn-disconexas").style.display = "none"
     }, 350)
     return
   } else {
-    btn.style.display = "block"
+    document.getElementById("btn-disconexas").style.display = "block"
   }
 
   const elementosConexao = new Set()
