@@ -6,29 +6,33 @@ let edges = []
 let clausulaSQL = ""
 let grafo = null
 
-fetch(
-  "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/tabelas.json",
-)
-  .then((resposta) => resposta.json())
-  .then((dados) => {
-    lerJSONTabelas(dados)
-  })
-  .catch((erro) => {
-    notificar("Não foi possível carregar os dados das tabelas.")
-    console.error("Erro ao carregar os dados das tabelas:", erro)
-  })
+function requisitaTabelas(versao = "2402_105") {
+  caminho = "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/"
+  fetch(caminho + "tabelas_" + versao + ".json")
+    .then((resposta) => resposta.json())
+    .then((dados) => {
+      lerJSONTabelas(dados)
+    })
+    .catch((erro) => {
+      notificar("Não foi possível carregar os dados das tabelas.")
+      console.error("Erro ao carregar os dados das tabelas:", erro)
+    })
+}
+requisitaTabelas()
 
-fetch(
-  "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/relacoes.json",
-)
-  .then((resposta) => resposta.json())
-  .then((dados) => {
-    lerJSONRelacoes(dados)
-  })
-  .catch((erro) => {
-    notificar("Não foi possível carregar os dados das relações.")
-    console.error("Erro ao carregar os dados das relacoes:", erro)
-  })
+function requisitaRelacoes(versao = "2402_105") {
+  caminho = "https://raw.githubusercontent.com/vitorgt/TOTVS-RM-SQL/main/dados/"
+  fetch(caminho + "relacoes_" + versao + ".json")
+    .then((resposta) => resposta.json())
+    .then((dados) => {
+      lerJSONRelacoes(dados)
+    })
+    .catch((erro) => {
+      notificar("Não foi possível carregar os dados das relações.")
+      console.error("Erro ao carregar os dados das relacoes:", erro)
+    })
+}
+requisitaRelacoes()
 
 if (document.readyState == "complete") {
   DOMpronto()
@@ -37,6 +41,13 @@ if (document.readyState == "complete") {
 }
 
 function DOMpronto() {
+  document.getElementById("slc-versao").addEventListener("change", () => {
+    let versao = document.getElementById("slc-versao").value
+    limparSelecao()
+    requisitaTabelas(versao)
+    requisitaRelacoes(versao)
+  })
+
   document
     .getElementById("in-busca-tabela")
     .addEventListener("input", atualizarListaTabelas)
@@ -372,14 +383,37 @@ function listarCaminhosConexao(caminhosConexao) {
     item.textContent = caminho
     lista.appendChild(item)
   })
+
+  const btnMais = document.createElement("button")
+  btnMais.textContent = "Tentar procurar mais alternativas"
+  btnMais.id = "btn-disconexas-mais"
+  btnMais.value = 2
+  lista.appendChild(btnMais)
+
+  document
+    .getElementById("btn-disconexas-mais")
+    .addEventListener("click", () => {
+      document.getElementById("btn-disconexas-mais").value =
+        parseInt(document.getElementById("btn-disconexas-mais").value) + 1
+      verificarTabelasDesconexas()
+    })
 }
 
 // Função para encontrar caminhos entre dois nós
-function encontrarCaminhos(origem, destino, k = 7, maxProfundidade = 7) {
+function encontrarCaminhos(
+  origem,
+  destino,
+  minCaminhos = 2,
+  maxProfundidade = 10,
+) {
   let caminhos = []
-  for (let prof = 0; caminhos.length < 2 && prof <= maxProfundidade; prof++)
+  for (
+    let prof = 0;
+    caminhos.length < minCaminhos && prof <= maxProfundidade;
+    prof++
+  )
     caminhos.push(...allSimplePaths(grafo, origem, destino, { maxDepth: prof }))
-  return caminhos.slice(0, k)
+  return caminhos
 }
 
 function verificarTabelasDesconexas() {
@@ -412,11 +446,15 @@ function verificarTabelasDesconexas() {
     document.getElementById("btn-disconexas").style.display = "block"
   }
 
+  let minCaminhos = 2
+  if (document.getElementById("btn-disconexas-mais")) {
+    minCaminhos = document.getElementById("btn-disconexas-mais").value
+  }
   const elementosConexao = new Set()
   const caminhosConexao = new Set()
   elementosConectados.forEach((ec) => {
     elementosDesconectados.forEach((ed) => {
-      const caminhos = encontrarCaminhos(ec, ed)
+      const caminhos = encontrarCaminhos(ec, ed, minCaminhos)
       caminhos.forEach((caminho) => {
         caminhosConexao.add(caminho.join(" ↔ "))
         caminho.slice(1, -1).forEach((tabela) => elementosConexao.add(tabela))
